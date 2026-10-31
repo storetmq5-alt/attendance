@@ -1,0 +1,231 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Picker Attendance</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+<style>
+body{font-family:system-ui,sans-serif;margin:0;background:#eef2f7;color:#222}
+.c{max-width:680px;margin:auto;padding:14px}.card{background:#fff;border-radius:14px;padding:14px;margin-bottom:12px;box-shadow:0 2px 6px #0001}
+input,select,button{font-size:16px;padding:10px;margin:4px 0;border-radius:8px;border:1px solid #ccc;width:100%;box-sizing:border-box}
+input[type=checkbox]{width:auto;margin-right:8px}input[readonly]{background:#eee}
+button{background:#1565c0;color:#fff;border:0;cursor:pointer}button.g{background:#2e7d32}button.r{background:#c62828}button.s{background:#888;width:auto}
+.row{display:flex;gap:8px;align-items:center}.row>*{flex:1}.msg{padding:8px;border-radius:8px;margin:6px 0}.e{background:#fdecea;color:#b71c1c}.o{background:#e8f5e9;color:#1b5e20}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center}.d{border-radius:6px;padding:6px 0;background:#eee;font-size:14px;cursor:pointer}.d small{display:block;font-size:9px;min-height:11px}
+.present{background:#a5d6a7}.absent{background:#ef9a9a}.half{background:#ffe082}.off{background:#90caf9}.working{background:#ce93d8}
+table{width:100%;border-collapse:collapse}td{padding:6px;border-bottom:1px solid #eee;font-size:14px}
+.tabs{display:flex;gap:4px}.tabs button{background:#cfd8dc;color:#222;padding:10px 2px;font-size:12px}.tabs .on{background:#1565c0;color:#fff}
+ul{margin:4px 0 10px;padding-left:18px}li{margin-bottom:6px;font-size:14px}
+.warn{color:#c62828}.free{color:#2e7d32}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
+.tile{border-radius:14px;padding:12px 6px;color:#fff;text-align:center;box-shadow:0 2px 6px #0002;cursor:pointer}.tile b{display:block;font-size:30px}.tile span{font-size:12px}
+.tile.sel{outline:4px solid #222}.chip.sel{outline:2px solid #222}
+.t1{background:linear-gradient(135deg,#1976d2,#42a5f5)}.t2{background:linear-gradient(135deg,#2e7d32,#66bb6a)}.t3{background:linear-gradient(135deg,#6a1b9a,#ab47bc)}
+.t4{background:linear-gradient(135deg,#c62828,#ef5350)}.t5{background:linear-gradient(135deg,#ef6c00,#ffa726)}.t6{background:linear-gradient(135deg,#546e7a,#90a4ae)}
+.sh{padding:0;overflow:hidden}.sh-h{color:#fff;padding:12px 14px;font-size:18px;font-weight:700;display:flex;justify-content:space-between;align-items:center}.sh-h small{font-weight:400;font-size:13px}
+.s1 .sh-h{background:linear-gradient(135deg,#1565c0,#42a5f5)}.s2 .sh-h{background:linear-gradient(135deg,#ef6c00,#ffb74d)}.s3 .sh-h{background:linear-gradient(135deg,#6a1b9a,#ba68c8)}.s4 .sh-h{background:linear-gradient(135deg,#00796b,#4db6ac)}
+.sh-b{padding:10px 14px 14px}.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}.chip{border-radius:20px;padding:4px 10px;font-size:12px;font-weight:600;cursor:pointer}
+.c1{background:#e3f2fd;color:#0d47a1}.c2{background:#e8f5e9;color:#1b5e20}.c3{background:#fff3e0;color:#e65100}.c4{background:#f3e5f5;color:#4a148c}.c5{background:#ffebee;color:#b71c1c}.c6{background:#eceff1;color:#37474f}
+.grp{font-weight:700;margin:12px 0 4px;font-size:14px}
+.pr{border-left:5px solid #ccc;background:#f8fafc;border-radius:8px;padding:8px 10px;margin:6px 0;font-size:14px}.pr small{display:block;color:#555;margin-top:3px;font-size:13px}
+.pa{border-color:#2e7d32}.pp{border-color:#ef6c00;background:#fff8e1}.pd{border-color:#6a1b9a}.pn{border-color:#c62828;background:#fff5f5}.po{border-color:#78909c}.px{border-color:#c62828;background:#fff5f5}
+.cd{font-weight:700;font-variant-numeric:tabular-nums}
+.devs{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.dv{border-radius:8px;padding:6px 10px;font-size:13px}.dv.u{background:#ffe0b2}.dv.f{background:#c8e6c9}
+</style></head><body><div class="c" id="app">Loading...</div>
+<script>
+const URL_='https://nulnttzcpxuirahznqvt.supabase.co', KEY='sb_publishable_lQHt44c5NtPHbo6qsTr3oQ_2ikMR99g';
+const $=s=>document.querySelector(s);
+const SH=['','1st Shift','2nd Shift','3rd Shift','Testing (Anytime)'],IC=['','🌅','🌤️','🌙','🧪'];
+const SL={present:'Present',half:'Half-day',absent:'Absent',working:'Working'};
+const MN=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const IST={timeZone:'Asia/Kolkata',dateStyle:'medium',timeStyle:'medium'};
+const fm=t=>new Date(t).toLocaleTimeString('en-IN',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit'});
+const ist=()=>{const p=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Kolkata',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()).reduce((a,x)=>(a[x.type]=x.value,a),{});return{y:+p.year,m:+p.month,d:+p.day}};
+function months(adm){const n=ist(),o=[];let y=n.y,m=n.m;const k=adm&&n.d<=5?3:2;for(let i=0;i<=k;i++){o.push({v:y+'-'+String(m).padStart(2,0),x:i==3});m--;if(m==0){m=12;y--}}return o}
+const mlabel=v=>new Date(+v.slice(0,4),+v.slice(5)-1,1).toLocaleString('en-US',{month:'long',year:'numeric'});
+const mopts=(adm,sel)=>months(adm).map(o=>`<option value="${o.v}" ${o.v==sel?'selected':''}>${mlabel(o.v)}${o.x?' (admin only - deleted soon)':''}</option>`).join('');
+const fixPm=adm=>{if(!months(adm).some(o=>o.v==A.pm))A.pm=months(adm)[0].v};
+let S=JSON.parse(localStorage.getItem('s')||'null'),A={tab:'d',pk:[],pid:'',pm:months(false)[0].v,iv:0,cd:{att:[],off:[]},md:'',f:null,dd:null},dev='';
+async function api(fn,a={}){if(S)a.t=S.token;const r=await fetch(URL_+'/rest/v1/rpc/'+fn,{method:'POST',headers:{apikey:KEY,'Content-Type':'application/json'},body:JSON.stringify(a)});const x=await r.text(),j=x?JSON.parse(x):null;if(!r.ok)throw new Error((j&&j.message)||'Error');return j}
+const pos=()=>new Promise((y,n)=>navigator.geolocation.getCurrentPosition(y,()=>n(new Error('Location permission is required')),{enableHighAccuracy:true,timeout:15000}));
+const dist=(p,c)=>{const r=Math.PI/180,a=Math.sin((c.lat-p.latitude)*r/2)**2+Math.cos(p.latitude*r)*Math.cos(c.lat*r)*Math.sin((c.lng-p.longitude)*r/2)**2;return 12742000*Math.asin(Math.sqrt(a))};
+const show=h=>$('#app').innerHTML=h, note=(m,ok)=>{const x=$('#m');if(x)x.innerHTML=m?`<div class="msg ${ok?'o':'e'}">${m}</div>`:''};
+const logout=()=>{clearInterval(A.iv);S=null;dev='';A.f=null;localStorage.removeItem('s');boot()};
+const closeM=()=>{const o=$('#mo');o&&o.remove()};
+function modal(h){closeM();const o=document.createElement('div');o.id='mo';o.style.cssText='position:fixed;inset:0;background:#000b;z-index:9;overflow:auto;padding:14px';o.innerHTML='<div class=c><div class=card>'+h+'<button class="s r" style="width:100%" onclick="closeM()">Close</button></div></div>';document.body.appendChild(o)}
+/* live countdown */
+const cd=(end,k)=>`<span class="cd" data-end="${end}" data-k="${k}"></span>`;
+function tick(){document.querySelectorAll('.cd').forEach(e=>{const df=+e.dataset.end-Date.now(),k=e.dataset.k;if(df<=0){e.textContent=k=='out'?'✔ hours complete, can punch out':'time is over';e.style.color=k=='out'?'#2e7d32':'#c62828';return}const s=Math.floor(df/1e3),h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60;e.textContent=(h?h+'h ':'')+m+'m '+String(x).padStart(2,0)+'s left';e.style.color=k=='out'?'#1565c0':'#e65100'})}
+setInterval(tick,1000);
+/* downloads */
+const csvEsc=v=>{v=v==null?'':String(v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
+function saveBlob(name,type,text){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\uFEFF'+text],{type}));a.download=name;document.body.appendChild(a);a.click();a.remove()}
+function dl(name,rows,cols){saveBlob(name,'text/csv;charset=utf-8',cols.map(c=>c[0]).join(',')+'\n'+rows.map(r=>cols.map(c=>csvEsc(r[c[1]])).join(',')).join('\n'))}
+
+function cal(d,ym,click){A.cd=d;const[y,m]=ym.split('-').map(Number),f=new Date(y,m-1,1).getDay(),n=new Date(y,m,0).getDate();let h='<div class=cal>'+'SMTWTFS'.split('').map(x=>`<b>${x}</b>`).join('')+'<i></i>'.repeat(f),cnt={};
+for(let i=1;i<=n;i++){const ds=`${ym}-${String(i).padStart(2,0)}`,a=d.att.find(x=>x.d==ds),c=d.off.includes(ds)?'off':a?a.s:'';cnt[c]=(cnt[c]||0)+1;h+=`<div class="d ${c}" onclick="${click}('${ds}')">${i}<small>${c}</small></div>`}
+h+='</div>';
+const rs=d.att.filter(x=>x.r&&(x.s=='absent'||x.s=='half')).sort((a,b)=>a.d<b.d?-1:1);
+return `<p>Present: ${cnt.present||0} | Half-day: ${cnt.half||0} | Absent: ${cnt.absent||0} | Week off: ${cnt.off||0}</p><small>Tap a date for details</small>`+h+(rs.length?'<h4>Absent / half-day details</h4><ul>'+rs.map(x=>`<li><b>${x.d}</b> (${x.s}): ${x.r}</li>`).join('')+'</ul>':'')}
+function detail(ds){const a=A.cd.att.find(x=>x.d==ds),off=A.cd.off.includes(ds);
+ let h=`<h3>${ds}</h3><p>Status: <b>${off?'Week off':a?SL[a.s]||a.s:'No record'}</b></p>`;
+ if(a&&a.in)h+=`<p>In: ${fm(a.in)}${a.out?' | Out: '+fm(a.out):''}</p>`;
+ if(a&&a.r)h+=`<div class="msg e"><b>Reason:</b> ${a.r}</div>`;
+ return h}
+const info=ds=>modal(detail(ds));
+
+async function boot(){
+ if(S&&S.role=='a'||location.hash=='#admin')return render();
+ try{show('<div class=card>Checking your location...</div>');const c=await api('cfg'),p=await pos(),d=dist(p.coords,c);
+  if(d>c.radius)return show(`<div class=card><h3>Access denied</h3>You are ${Math.round(d)} m away from the store. Please come within ${c.radius} m to use this website.<button onclick="boot()">Check again</button></div>`)}
+ catch(e){return show(`<div class=card><h3>Location required</h3>${e.message}<button onclick="boot()">Try again</button></div>`)}
+ render()}
+function render(){
+ if(!S){const adm=location.hash=='#admin';return show(`<div class=card><h2>${adm?'Admin Login':'Picker Login'}</h2><div id=m></div>${adm?'':'<input id=u placeholder="Login ID">'}<input id=pw type=password placeholder="Password"><button onclick="doLogin(${adm})">Login</button></div>`)}
+ S.role=='a'?adminView():pickerView()}
+async function doLogin(adm){try{S=await api(adm?'alogin':'login',adm?{p:$('#pw').value}:{e:$('#u').value.trim(),p:$('#pw').value});dev='';localStorage.setItem('s',JSON.stringify(S));boot()}catch(e){note(e.message)}}
+
+/* ---------- SELFIE ---------- */
+function selfie(label){return new Promise((res,rej)=>{
+ const o=document.createElement('div');o.style.cssText='position:fixed;inset:0;background:#000d;z-index:9;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px';
+ o.innerHTML='<video autoplay playsinline muted style="max-width:92%;max-height:65%;border-radius:10px"></video><div class=row style="max-width:400px;width:90%"><button class=g id=cap>Capture</button><button class=r id=cc>Cancel</button></div>';
+ document.body.appendChild(o);const v=o.querySelector('video');let st;
+ const done=(f,x)=>{st&&st.getTracks().forEach(t=>t.stop());o.remove();f(x)};
+ navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:false}).then(s=>{st=s;v.srcObject=s}).catch(()=>done(rej,new Error('Camera permission is required for the selfie')));
+ o.querySelector('#cc').onclick=()=>done(rej,new Error('Selfie cancelled'));
+ o.querySelector('#cap').onclick=()=>{if(!v.videoWidth)return;const w=480,h=Math.round(w*v.videoHeight/v.videoWidth),c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');x.drawImage(v,0,0,w,h);
+  x.fillStyle='#000a';x.fillRect(0,h-28,w,28);x.fillStyle='#fff';x.font='13px sans-serif';x.fillText(new Date().toLocaleString('en-IN',IST)+' | '+label,8,h-9);
+  done(res,c.toDataURL('image/jpeg',0.6))}})}
+
+/* ---------- PICKER ---------- */
+async function pickerView(){
+ try{Object.assign(S,await api('my_info'));localStorage.setItem('s',JSON.stringify(S))}catch(e){return logout()}
+ dev='';fixPm(false);
+ show(`<div class=card><div class=row><b>${S.name} (${S.ptype=='full'?'Full time':'Part time'})</b><button class="s r" onclick="logout()">Logout</button></div></div>
+ <div class=card><p><b>Your shift: ${SH[S.shift||1]}</b></p><div id=op></div>
+ <div class=row><input id=dv placeholder="Scan a device QR (typing is disabled)" value="" readonly><button class=s onclick="scan()">Scan QR</button></div><div id=qr></div>
+ ${S.can_pend?`<label class=warn><input type=checkbox id=nd>Device not free now. Punch in as PENDING. You must attach a device within ${S.pend_hours} hour(s)${S.shift==4?'':', otherwise it is cancelled and you are marked ABSENT'}. Your hours count from your punch-in time once a device is attached.</label>`:''}
+ <div class=row><button class=g onclick="punch('in')">Punch In</button><button class=r onclick="punch('out')">Punch Out</button></div><div id=m></div></div>
+ <div class=card><h3>My Attendance</h3><select id=pm onchange="A.pm=this.value;loadMine()">${mopts(false,A.pm)}</select><div id=cl></div><button onclick="dlMine()">Download my CSV (last 3 months)</button></div>`);loadMine();loadOpen()}
+async function loadOpen(){try{const [o,f]=await Promise.all([api('my_open'),api('free_devs')]);
+ $('#op').innerHTML=`<p>Free devices now: <b class=free>${f.free}</b> of ${f.total}</p>`+(o?`<div class="msg e"><b>Your punch-in (${fm(o.in_t)}) is PENDING.</b> Scan a free device QR and tap the button below. Valid until ${fm(o.exp)}: ${cd(Date.parse(o.exp),'pend')}<button onclick="attach()">Attach device to my pending punch-in</button></div>`:'');tick()}catch(e){}}
+async function loadMine(){const[y,m]=A.pm.split('-');try{$('#cl').innerHTML=cal(await api('my_month',{y:+y,m:+m}),A.pm,'info')}catch(e){if(/expired|disabled/.test(e.message))logout();else note(e.message)}}
+async function scan(){$('#qr').innerHTML='<div id=rd></div>';const q=new Html5Qrcode('rd');
+ try{await q.start({facingMode:'environment'},{fps:10,qrbox:220},t=>{dev=t.trim();$('#dv').value=dev;if($('#nd'))$('#nd').checked=false;q.stop().then(()=>$('#qr').innerHTML='')})}catch(e){note('Camera permission is required')}}
+function resetDev(){dev='';if($('#dv'))$('#dv').value='';if($('#nd'))$('#nd').checked=false}
+async function punch(act){try{
+ const nd=$('#nd')&&$('#nd').checked&&act=='in',d=nd?'':dev;
+ if(!d&&!nd)return note('Scan a device QR first');
+ if(nd&&!confirm('Your punch-in will be PENDING. If you do not attach a device within '+S.pend_hours+' hour(s) it will be CANCELLED'+(S.shift==4?'':' and you will be marked ABSENT')+'. Continue?'))return;
+ const ph=await selfie(S.name+' | '+(act=='in'?'IN':'OUT'));
+ note('Getting location...',1);const p=(await pos()).coords;
+ const r=await api('punch',{act,sh:S.shift||1,dev:d,la:p.latitude,ln:p.longitude,acc:p.accuracy,ph});
+ resetDev();note(r,1);loadMine();loadOpen()}catch(e){note(e.message)}}
+async function attach(){try{const r=await api('attach_dev',{dev});resetDev();note(r,1);loadMine();loadOpen()}catch(e){note(e.message)}}
+async function dlMine(){try{const rows=[];for(const o of months(false)){const[y,m]=o.v.split('-').map(Number),d=await api('my_month',{y,m});
+ d.att.forEach(a=>rows.push({date:a.d,status:SL[a.s]||a.s,in:a.in?fm(a.in):'',out:a.out?fm(a.out):'',hours:a.in&&a.out?((Date.parse(a.out)-Date.parse(a.in))/36e5).toFixed(2):'',reason:a.r||''}));
+ d.off.forEach(x=>rows.push({date:x,status:'Week off',in:'',out:'',hours:'',reason:''}))}
+ rows.sort((a,b)=>a.date<b.date?-1:1);dl('my-attendance-'+S.name+'.csv',rows,[['Date','date'],['Status','status'],['In','in'],['Out','out'],['Hours','hours'],['Reason','reason']])}catch(e){note(e.message)}}
+
+/* ---------- ADMIN DASHBOARD ---------- */
+const NEED=r=>(r.shift==4||r.ptype=='full')?9:5;
+const kind=r=>r.ov=='absent'?'ab':r.ov=='present'?'dn':(r.in_t&&r.out_t)?'dn':(r.in_t&&r.dev)?'ac':r.in_t?'pe':r.is_off?'of':'ny';
+const FL={ex:'Expected',ac:'Active pickers',pe:'Waiting for device',dn:'Shift completed',ny:'Not arrived yet',of:'Week off'};
+const GR={
+ ac:['🟢 Active pickers',r=>`<div class="pr pa"><b>${r.name}</b><small>📟 ${r.dev} · In ${fm(r.in_t)}<br>⏳ ${cd(Date.parse(r.in_t)+NEED(r)*36e5,'out')} <span style="color:#777">(of ${NEED(r)}h)</span></small></div>`],
+ pe:['🟠 Waiting for a device',r=>`<div class="pr pp"><b>${r.name}</b><small>In ${fm(r.in_t)} · no device yet<br>Cancels in ${cd(Date.parse(r.in_t)+(r.ph||0.25)*36e5,'pend')}</small></div>`],
+ dn:['✅ Shift completed',r=>`<div class="pr pd"><b>${r.name}</b><small>${r.out_t?fm(r.in_t)+' - '+fm(r.out_t)+' ('+((Date.parse(r.out_t)-Date.parse(r.in_t))/36e5).toFixed(1)+'h)':'Marked present by admin'}${r.reason&&r.out_t?' · <span class=warn>'+r.reason+'</span>':''}</small></div>`],
+ ny:['⏳ Not arrived yet',r=>`<div class="pr pn"><b>${r.name}</b></div>`],
+ of:['🏖️ Week off today',r=>`<div class="pr po"><b>${r.name}</b></div>`],
+ ab:['❌ Absent',r=>`<div class="pr px"><b>${r.name}</b><small class=warn>${r.reason||'Marked absent'}</small></div>`]};
+function setF(k,s){A.f=(A.f&&A.f.k==k&&A.f.s==s)?null:{k,s};drawDash()}
+function clearF(){A.f=null;drawDash()}
+function drawDash(){const d=A.dd;if(!d||!$('#dash'))return;const rows=d.rows,used=d.devs.filter(x=>x.name),F=A.f;
+ rows.forEach(r=>r.k=kind(r));
+ const N=k=>rows.filter(r=>r.k==k).length,on=(k,s)=>F&&F.k==k&&F.s==s?' sel':'';
+ const tile=(c,k,n,l)=>`<div class="tile ${c}${on(k,0)}" onclick="setF('${k}',0)"><b>${n}</b><span>${l}</span></div>`;
+ let h=`<div class=tiles>${tile('t1','ex',rows.length-N('of'),'Expected today')}${tile('t2','ac',N('ac'),'Active pickers')}${tile('t3','dn',N('dn'),'Shift completed')}${tile('t4','ny',N('ny'),'Not arrived yet')}${tile('t5','pe',N('pe'),'Waiting for device')}${tile('t6','of',N('of'),'Week off')}</div>`;
+ if(F)h+=`<div class="msg o">Showing only: <b>${FL[F.k]}</b>${F.s?' · '+SH[F.s]:' · all shifts'} <button class="s" onclick="clearF()">Show all</button></div>`;
+ else h+=`<div class=card><b>📟 Devices: ${used.length} in use, ${d.devs.length-used.length} free (total ${d.devs.length})</b><div class=devs>${d.devs.map(x=>x.name?`<div class="dv u"><b>${x.serial}</b><br>${x.name}</div>`:`<div class="dv f"><b>${x.serial}</b><br>FREE</div>`).join('')||'No devices added. Add them in the Devices tab'}</div>
+ ${d.nodev.length?`<div class=grp>Punched in without device (last 30 days)</div>${d.nodev.map(x=>`<small>${x.name}: ${x.n} time${x.n>1?'s':''}</small><br>`).join('')}`:''}</div>`;
+ for(let s=1;s<=4;s++){if(F&&F.s&&F.s!=s)continue;
+  const g=rows.filter(r=>r.shift==s),L=k=>g.filter(r=>r.k==k),off=L('of').length,arr=L('ac').length+L('pe').length+L('dn').length;
+  if(!g.length){if(!F)h+=`<div class="card sh s${s}"><div class=sh-h><span>${IC[s]} ${SH[s]}</span><small>0 pickers</small></div><div class=sh-b><small>No pickers assigned to this shift. Assign a shift in the Pickers tab.</small></div></div>`;continue}
+  const ch=(c,k,n,l)=>`<span class="chip ${c}${on(k,s)}" onclick="setF('${k}',${s})">${l} ${n}</span>`;
+  const keys=F?(F.k=='ex'?['ac','pe','dn','ny','ab']:[F.k]):['ac','pe','dn','ny','of','ab'];
+  let body=keys.map(k=>{const l=k=='ab'?L('ab'):L(k);return l.length?`<div class=grp>${GR[k][0]} (${l.length})</div>`+l.map(GR[k][1]).join(''):''}).join('');
+  if(!body)body='<small>No pickers in this list</small>';
+  h+=`<div class="card sh s${s}"><div class=sh-h><span>${IC[s]} ${SH[s]}</span><small>Arrived ${arr} of ${g.length-off} expected</small></div><div class=sh-b>
+  <div class=chips>${ch('c1','ex',g.length-off,'Expected')}${ch('c2','ac',L('ac').length,'Active')}${ch('c3','pe',L('pe').length,'Waiting')}${ch('c4','dn',L('dn').length,'Completed')}${ch('c5','ny',L('ny').length,'Not arrived')}${ch('c6','of',off,'Week off')}</div>${body}</div></div>`}
+ $('#dash').innerHTML=h+'<small>Live. Data refreshes every 30 seconds. Tap a tile or a chip to filter.</small>';tick()}
+async function loadDash(){try{const d=await api('a_dash');A.dd=d;
+ if(A.tab=='v'){$('#dl').innerHTML=d.devs.length?`<table>${d.devs.map(x=>`<tr><td><b>${x.serial}</b><br><small>${x.name?'With '+x.name+' since '+fm(x.in_t):'<span class=free>FREE</span>'}</small></td><td><button class="s r" onclick="delDev('${x.serial}')">Remove</button></td></tr>`).join('')}</table>`:'No devices added yet';return}
+ drawDash()}catch(e){note(e.message)}}
+async function addDev(){try{await api('a_dev_add',{sn:$('#ds').value});$('#ds').value='';loadDash()}catch(e){note(e.message)}}
+async function delDev(s){if(!confirm('Remove device '+s+'?'))return;try{await api('a_dev_del',{sn:s});loadDash()}catch(e){note(e.message)}}
+
+/* ---------- ADMIN ---------- */
+async function adminView(){
+ clearInterval(A.iv);fixPm(true);
+ try{A.pk=await api('a_pickers')}catch(e){return logout()}
+ const T=(k,n)=>`<button class="${A.tab==k?'on':''}" onclick="A.tab='${k}';adminView()">${n}</button>`;
+ const act=A.pk.filter(p=>!p.removed_at),rem=A.pk.filter(p=>p.removed_at);
+ const n=ist(),p2=x=>String(x).padStart(2,0),today=`${n.y}-${p2(n.m)}-${p2(n.d)}`,mx=`${n.y}-${p2(n.m)}-${p2(new Date(n.y,n.m,0).getDate())}`,mn=months(true).pop().v+'-01';
+ let b='';
+ if(A.tab=='d')b='<div id=dash>Loading dashboard...</div><div id=m></div>';
+ if(A.tab=='v')b='<div class=card><h3>Store Devices</h3><div id=m></div><input id=ds placeholder="Device serial number (same text as in its QR)"><button onclick="addDev()">Add device</button><div id=dl>Loading...</div></div>';
+ if(A.tab=='p')b=`<div class=card><h3 id=ft>New Picker</h3><input type=hidden id=pi><input id=pe placeholder="Login ID"><input id=pn placeholder="Name"><input id=pp placeholder="Password (leave empty while editing to keep the same)">
+ <div class=row><select id=pt><option value=full>Full time (9 hrs)</option><option value=part>Part time (5 hrs)</option></select><select id=ps><option value=1>1st Shift</option><option value=2>2nd Shift</option><option value=3>3rd Shift</option><option value=4>Testing (Anytime)</option></select></div>
+ <select id=pa><option value=true>Access: Enabled</option><option value=false>Access: Disabled</option></select>
+ <button onclick="savePk()">Save</button><div id=m></div></div>
+ <div class=card><table>${act.map(p=>`<tr><td>${p.name}<br><small>${p.emp_id}</small></td><td>${p.ptype=='full'?'Full':'Part'}</td><td>${SH[p.shift||1]}</td><td>${p.active?'✅':'⛔'}</td><td><button class=s onclick="editPk('${p.id}')">Edit</button> <button class="s r" onclick="rmPk('${p.id}')">Remove</button></td></tr>`).join('')}</table></div>
+ ${rem.length?`<div class=card><h3>Removed pickers</h3><small>Their data stays visible to you for 5 days, then it is deleted permanently.</small><table>${rem.map(p=>`<tr><td>${p.name}<br><small>${p.emp_id} · ${Math.max(0,5-Math.floor((Date.now()-Date.parse(p.removed_at))/864e5))} day(s) left</small></td><td><button class="s g" onclick="restPk('${p.id}')">Restore</button></td></tr>`).join('')}</table></div>`:''}`;
+ if(A.tab=='a')b=`<div class=card><h3>⬇ Download attendance</h3><small>Pick a date range (last 3 months only, max 93 days at a time). Week offs set for the rest of this month are included.</small>
+ <div class=row><div style="text-align:left"><small>From</small><input type=date id=d1 min="${mn}" max="${mx}" value="${n.y}-${p2(n.m)}-01"></div><div style="text-align:left"><small>To</small><input type=date id=d2 min="${mn}" max="${mx}" value="${mx}"></div></div>
+ <button class=g onclick="dlSheet()">Colored attendance sheet (Excel): P / A / W / Half</button>
+ <button onclick="dlDetail()">Detailed CSV (in, out, hours, reason)</button><div id=m></div></div>
+ <div class=card><h3>Picker calendar</h3><select id=am onchange="A.pm=this.value;loadAdm()">${mopts(true,A.pm)}</select>
+ <select id=ap onchange="A.pid=this.value;loadAdm()"><option value="">Select picker to view calendar</option>${A.pk.map(p=>`<option value=${p.id} ${A.pid==p.id?'selected':''}>${p.name}${p.removed_at?' (removed)':''}</option>`).join('')}</select><div id=cl></div></div>`;
+ if(A.tab=='s')b=`<div class=card><h3>Store Location & Settings</h3><div id=m></div><input id=la placeholder="Latitude"><input id=ln placeholder="Longitude"><button class=s onclick="myLoc()">Use my current location</button><input id=rd type=number placeholder="Allowed range (meters)" value=100><input id=np type=password placeholder="New admin password (optional)"><button onclick="saveCfg()">Save</button></div>
+ <div class=card><h3>Pending punch-in rules (Device not free)</h3><small>Choose which shifts can punch in without a device, and how many hours the punch-in stays pending. Only full-time pickers (and everyone in the Testing shift) get this option.</small><div id=pd>Loading...</div><button onclick="savePend()">Save pending rules</button></div>`;
+ show(`<div class=card><div class=row><b>Admin Panel</b><button class="s r" onclick="logout()">Logout</button></div></div><div class="card tabs">${T('d','Dashboard')}${T('v','Devices')}${T('p','Pickers')}${T('a','Attendance')}${T('s','Settings')}</div>${b}`);
+ if(A.tab=='d'||A.tab=='v'){loadDash();A.iv=setInterval(loadDash,30000)}
+ if(A.tab=='a')loadAdm();
+ if(A.tab=='s'){api('cfg').then(c=>{$('#la').value=c.lat;$('#ln').value=c.lng;$('#rd').value=c.radius});loadPend()}}
+function editPk(id){const p=A.pk.find(x=>x.id==id);$('#ft').textContent='Edit: '+p.name;$('#pi').value=id;$('#pe').value=p.emp_id;$('#pn').value=p.name;$('#pt').value=p.ptype;$('#ps').value=p.shift||1;$('#pa').value=p.active;scrollTo(0,0)}
+async function savePk(){try{await api('a_save',{i:$('#pi').value||null,e:$('#pe').value.trim(),n:$('#pn').value.trim(),p:$('#pp').value,ty:$('#pt').value,ac:$('#pa').value=='true',sh:+$('#ps').value});A.tab='p';adminView()}catch(e){note(e.message)}}
+async function rmPk(id){const p=A.pk.find(x=>x.id==id);if(!confirm('Remove '+p.name+'?\n\nTheir login stops now. You can still see their data and restore them for 5 days. After that all their data is deleted permanently.'))return;try{await api('a_remove',{pid:id});adminView()}catch(e){note(e.message)}}
+async function restPk(id){try{await api('a_restore',{pid:id});adminView()}catch(e){note(e.message)}}
+async function loadAdm(){if(!A.pid){$('#cl').innerHTML='';return}const[y,m]=A.pm.split('-');try{$('#cl').innerHTML=cal(await api('a_month',{pid:A.pid,y:+y,m:+m}),A.pm,'mark')}catch(e){note(e.message)}}
+
+/* ---- admin downloads ---- */
+async function getRep(){const a=$('#d1').value,b=$('#d2').value;if(!a||!b)throw new Error('Select the From and To dates');if(a>b)throw new Error('From date must be before To date');return{a,b,r:await api('a_report2',{d1:a,d2:b})}}
+const CS={'present':['P','#c6efce','#006100'],'working':['P','#c6efce','#006100'],'absent':['A','#ffc7ce','#9c0006'],'week off':['W','#d9d9d9','#404040'],'half-day':['Half','#ffeb9c','#7f6000'],'half':['Half','#ffeb9c','#7f6000']};
+const hx=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+async function dlSheet(){try{const{a,b,r}=await getRep();
+ if(!r.pk.length)return note('No pickers found');
+ const days=[];for(let t=Date.parse(a);t<=Date.parse(b);t+=864e5)days.push(new Date(t).toISOString().slice(0,10));
+ const mp={};r.rows.forEach(x=>mp[x.login_id+'|'+x.date]=x.status);
+ const H='background:#1f3864;color:#ffffff;font-weight:bold;text-align:center;border:1px solid #999999;padding:4px';
+ const B='border:1px solid #999999;text-align:center;padding:4px';
+ let h=`<html><head><meta charset="utf-8"></head><body><table style="border-collapse:collapse;font-family:Calibri,Arial;font-size:11pt"><tr><td style="${H}">Picker</td><td style="${H}">Shift</td><td style="${H}">Type</td>`
+  +days.map(d=>`<td style="${H}">${d.slice(8)}-${MN[+d.slice(5,7)-1]}</td>`).join('')
+  +['P','A','W','Half'].map(x=>`<td style="${H}">${x}</td>`).join('')+'</tr>';
+ r.pk.forEach(p=>{const c={P:0,A:0,W:0,Half:0};let cells='';
+  days.forEach(d=>{const st=mp[p.login_id+'|'+d],z=st?CS[st.toLowerCase()]:null;if(z){c[z[0]]++;cells+=`<td style="${B};background:${z[1]};color:${z[2]};font-weight:bold">${z[0]}</td>`}else cells+=`<td style="${B}"></td>`});
+  h+=`<tr><td style="${B};text-align:left;font-weight:bold">${hx(p.name)}</td><td style="${B}">${p.shift}</td><td style="${B}">${p.type}</td>${cells}`
+   +`<td style="${B};background:#c6efce;color:#006100;font-weight:bold">${c.P}</td><td style="${B};background:#ffc7ce;color:#9c0006;font-weight:bold">${c.A}</td><td style="${B};background:#d9d9d9;color:#404040;font-weight:bold">${c.W}</td><td style="${B};background:#ffeb9c;color:#7f6000;font-weight:bold">${c.Half}</td></tr>`});
+ h+='</table></body></html>';
+ saveBlob('attendance-'+a+'-to-'+b+'.xls','application/vnd.ms-excel',h);note('Downloaded. If Excel shows a format warning, click Yes to open the file.',1)}catch(e){note(e.message)}}
+async function dlDetail(){try{const{a,b,r}=await getRep();if(!r.rows.length)return note('No data in this date range');
+ dl('attendance-detail-'+a+'-to-'+b+'.csv',r.rows,[['Date','date'],['Picker','picker'],['Login ID','login_id'],['Shift','shift'],['Type','type'],['Status','status'],['In','in_time'],['Out','out_time'],['Hours','hours'],['Reason','reason']])}catch(e){note(e.message)}}
+
+function mark(ds){A.md=ds;modal(detail(ds)+`<div class=row><button class=g onclick="doMark('present')">Mark Present</button><button class=r onclick="doMark('absent')">Mark Absent</button></div>
+ <div class=row><button onclick="doMark('off')">Set Week off</button><button onclick="doMark('unoff')">Remove Week off</button></div>
+ <button onclick="doMark('clear')">Reset manual change</button><button onclick="closeM();viewPh(A.md)">View photos</button>`)}
+async function doMark(v){closeM();try{await api('a_mark',{pid:A.pid,d:A.md,v});loadAdm()}catch(e){note(e.message)}}
+async function viewPh(d){try{const r=await api('a_photos',{pid:A.pid,d});const o=document.createElement('div');o.style.cssText='position:fixed;inset:0;background:#000e;z-index:9;overflow:auto;padding:14px';
+ o.innerHTML='<div class=c><button class="s r">Close</button><h3 style="color:#fff">Photos: '+d+'</h3>'+(r.length?r.map(x=>`<div class=card><b>${x.kind.toUpperCase()}</b> <small>${new Date(x.taken).toLocaleString('en-IN',IST)}</small><br><img src="${x.img}" style="width:100%;border-radius:8px"></div>`).join(''):'<p style="color:#fff">No photos for this day. Photos are deleted automatically after 20 days.</p>')+'</div>';
+ document.body.appendChild(o);o.querySelector('button').onclick=()=>o.remove()}catch(e){note(e.message)}}
+async function myLoc(){try{const p=(await pos()).coords;$('#la').value=p.latitude;$('#ln').value=p.longitude}catch(e){note(e.message)}}
+async function saveCfg(){try{await api('a_cfg',{la:+$('#la').value,ln:+$('#ln').value,r:+$('#rd').value,np:$('#np').value});note('Saved',1)}catch(e){note(e.message)}}
+async function loadPend(){try{const r=await api('a_get_pend');$('#pd').innerHTML=r.map(x=>`<div class=pr><b>${IC[x.shift]} ${SH[x.shift]}</b><br><label><input type=checkbox id=po${x.shift} ${x.pend_on?'checked':''}>Allow "Device not free" pending punch-in</label><input id=ph${x.shift} type=number step=0.25 min=0.05 max=12 value="${x.pend_hours}"><small>Hours the punch-in can stay pending (0.25 = 15 minutes)</small></div>`).join('')}catch(e){note(e.message)}}
+async function savePend(){try{await api('a_set_pend',{c:[1,2,3,4].map(s=>({shift:s,on:$('#po'+s).checked,hours:+$('#ph'+s).value||0.25}))});note('Pending rules saved',1)}catch(e){note(e.message)}}
+boot();
+</script></body></html>
