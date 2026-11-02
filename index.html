@@ -88,7 +88,7 @@ function selfie(label){return new Promise((res,rej)=>{
  const done=(f,x)=>{st&&st.getTracks().forEach(t=>t.stop());o.remove();f(x)};
  navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:false}).then(s=>{st=s;v.srcObject=s}).catch(()=>done(rej,new Error('Camera permission is required for the selfie')));
  o.querySelector('#cc').onclick=()=>done(rej,new Error('Selfie cancelled'));
- o.querySelector('#cap').onclick=()=>{if(!v.videoWidth)return;const w=480,h=Math.round(w*v.videoHeight/v.videoWidth),c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');x.drawImage(v,0,0,w,h);
+ o.querySelector('#cap').onclick=()=>{if(!v.videoWidth)return;const w=360,h=Math.round(w*v.videoHeight/v.videoWidth),c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');x.drawImage(v,0,0,w,h);
   x.fillStyle='#000a';x.fillRect(0,h-28,w,28);x.fillStyle='#fff';x.font='13px sans-serif';x.fillText(new Date().toLocaleString('en-IN',IST)+' | '+label,8,h-9);
   done(res,c.toDataURL('image/jpeg',0.6))}})}
 
@@ -184,7 +184,7 @@ async function adminView(){
  if(A.tab=='s')b=`<div class=card><h3>Store Location & Settings</h3><div id=m></div><input id=la placeholder="Latitude"><input id=ln placeholder="Longitude"><button class=s onclick="myLoc()">Use my current location</button><input id=rd type=number placeholder="Allowed range (meters)" value=100><input id=np type=password placeholder="New admin password (optional)"><button onclick="saveCfg()">Save</button></div>
  <div class=card><h3>Pending punch-in rules (Device not free)</h3><small>Choose which shifts can punch in without a device, and how many hours the punch-in stays pending. Only full-time pickers (and everyone in the Testing shift) get this option.</small><div id=pd>Loading...</div><button onclick="savePend()">Save pending rules</button></div>`;
  show(`<div class=card><div class=row><b>Admin Panel</b><button class="s r" onclick="logout()">Logout</button></div></div><div class="card tabs">${T('d','Dashboard')}${T('v','Devices')}${T('p','Pickers')}${T('a','Attendance')}${T('s','Settings')}</div>${b}`);
- if(A.tab=='d'||A.tab=='v'){loadDash();A.iv=setInterval(loadDash,30000)}
+ if(A.tab=='d'||A.tab=='v'){loadDash();A.iv=setInterval(()=>{if(!document.hidden)loadDash()},60000)}
  if(A.tab=='a')loadAdm();
  if(A.tab=='s'){api('cfg').then(c=>{$('#la').value=c.lat;$('#ln').value=c.lng;$('#rd').value=c.radius});loadPend()}}
 function editPk(id){const p=A.pk.find(x=>x.id==id);$('#ft').textContent='Edit: '+p.name;$('#pi').value=id;$('#pe').value=p.emp_id;$('#pn').value=p.name;$('#pt').value=p.ptype;$('#ps').value=p.shift||1;$('#pa').value=p.active;scrollTo(0,0)}
