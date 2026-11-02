@@ -79,8 +79,7 @@ async function boot(){
 function render(){
  if(!S){const adm=location.hash=='#admin';return show(`<div class=card><h2>${adm?'Admin Login':'Picker Login'}</h2><div id=m></div>${adm?'':'<input id=u placeholder="Login ID">'}<input id=pw type=password placeholder="Password"><button onclick="doLogin(${adm})">Login</button></div>`)}
  S.role=='a'?adminView():pickerView()}
-async function doLogin(adm){try{S=await api(adm?'alogin':'login',adm?{p:$('#pw').value}:{e:$('#u').value.trim(),p:$('#pw').value});dev='';localStorage.setItem('s',JSON.stringify(S));boot()}catch(e){note(e.message)}}
-
+async function doLogin(adm){try{const r=await api(adm?'alogin':'login',adm?{p:$('#pw').value}:{e:$('#u').value.trim(),p:$('#pw').value});if(r.err)return note(r.err);S=r;dev='';localStorage.setItem('s',JSON.stringify(S));boot()}catch(e){note(e.message)}}
 /* ---------- SELFIE ---------- */
 function selfie(label){return new Promise((res,rej)=>{
  const o=document.createElement('div');o.style.cssText='position:fixed;inset:0;background:#000d;z-index:9;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px';
